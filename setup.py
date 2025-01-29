@@ -1,9 +1,13 @@
 from setuptools import setup, find_packages
 
+# Read requirements from requirements.txt if you have one
+with open('README.md', 'r', encoding='utf-8') as f:
+    long_description = f.read()
+
 setup(
     name='mordornotebook',
     version='0.1.0',
-    packages=find_packages(),
+    packages=find_packages(include=['mordornotebook', 'mordornotebook.*']),
     install_requires=[
         'numpy',
         'pandas',
@@ -17,22 +21,22 @@ setup(
         'psycopg2-binary',
         'quandl',
         'schedule',
-        'openai',  # Required for OpenRouter
+        'openai',
         'lxml',
-        'aiohttp',  # For async operations with OpenRouter
-        'asyncio',  # For async support
-        'uuid',     # For generating unique identifiers
+        'aiohttp',
+        'asyncio',
     ],
     author='Alex Good',
     author_email='goodalexander@gmail.com',
     description='Tool for Jupyter Notebooks to interact with codebases with AI',
-    long_description=open('README.md').read(),
+    long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/goodalexander/mordornotebook',  # Replace with your actual GitHub repo URL
+    url='https://github.com/goodalexander/mordornotebook',
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
     ],
     python_requires='>=3.11',
+    include_package_data=True,
 )
