@@ -1,44 +1,114 @@
-from pathlib import Path
 import jupyter_core.paths as paths
+from pathlib import Path
 import os
 import re
-def find_and_select_repos(start_path=None):
-    """Find git repos and let user select them with simple text input."""
-    if start_path is None:
-        # Try common locations
-        possible_paths = [
-            Path.home() / "Documents" / "GitHub",
-            Path.home() / "OneDrive" / "Documents" / "GitHub",
-        ]
 
-        for path in possible_paths:
-            if path.exists():
-                start_path = path
-                break
+def normalize_path(path_str):
+    """Convert Windows paths to Linux style and normalize"""
+    return str(Path(path_str).resolve()).replace('\\', '/')
+
+def update_jupyter_config(variable_name, value):
+    """Update or add a variable to jupyter config"""
+    config_dir = paths.jupyter_config_dir()
+    config_path = os.path.join(config_dir, "jupyter_notebook_config.py")
+    
+    # Create config if it doesn't exist
+    if not os.path.exists(config_path):
+        os.makedirs(config_dir, exist_ok=True)
+        open(config_path, 'a').close()
+    
+    with open(config_path, 'r') as f:
+        content = f.read()
+    
+    # Check if variable exists
+    var_pattern = f"c\.{variable_name}\s*="
+    var_match = re.search(var_pattern, content, re.MULTILINE)
+    
+    if isinstance(value, list):
+        # Format list values
+        value_str = "[\n    " + ",\n    ".join(f"'{v}'" for v in value) + "\n]"
     else:
-        start_path = Path(start_path)
+        # Format string value
+        value_str = f"'{value}'"
+    
+    new_line = f"c.{variable_name} = {value_str}\n"
+    
+    if var_match:
+        # Replace existing variable
+        content = re.sub(f"{var_pattern}.*?(?=\n|$)", new_line.strip(), content, flags=re.MULTILINE | re.DOTALL)
+    else:
+        # Add new variable
+        content += f"\n# {variable_name} configuration\n{new_line}"
+    
+    with open(config_path, 'w') as f:
+        f.write(content)
 
-    print(f"Searching in: {start_path}\n")
-
-    # Find repositories
+def github_update_jupyter_config():
+    """Interactive function to update GitHub directory and referenced repos"""
+    config_dir = paths.jupyter_config_dir()
+    config_path = os.path.join(config_dir, "jupyter_notebook_config.py")
+    
+    # Check for existing configuration
+    existing_github_dir = None
+    existing_repos = []
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            content = f.read()
+            
+        dir_match = re.search(r"c\.GITHUB_DIRECTORY\s*=\s*'([^']*)'", content)
+        if dir_match:
+            existing_github_dir = dir_match.group(1)
+            
+        repos_match = re.search(r"c\.REFERENCED_REPOS\s*=\s*\[(.*?)\]", content, re.DOTALL)
+        if repos_match:
+            existing_repos = [repo.strip().strip("'\"") for repo in repos_match.group(1).split(',') if repo.strip()]
+    
+    if existing_github_dir and existing_repos:
+        print("\nExisting configuration found:")
+        print(f"GitHub directory: {existing_github_dir}")
+        print("Referenced repositories:")
+        for repo in existing_repos:
+            print(f"- {repo}")
+            
+        print("\nWould you like to keep the existing configuration (1) or re-enter (0)?")
+        choice = input().strip()
+        
+        if choice == "1":
+            print("Keeping existing configuration.")
+            return
+    
+    # If no existing config or user chose to re-enter
+    print("\nPlease enter your GitHub directory path:")
+    github_dir = input().strip()
+    
+    # 2. Normalize path
+    github_dir = normalize_path(github_dir)
+    
+    # 3 & 4. Cache GITHUB_DIRECTORY to jupyter config
+    update_jupyter_config('GITHUB_DIRECTORY', github_dir)
+    print(f"\nGitHub directory saved: {github_dir}")
+    
+    # 6. Display available repos
+    github_path = Path(github_dir)
     repos = []
-    for item in start_path.rglob("*"):
-        if item.name == ".git" and item.is_dir():
-            repos.append(item.parent.name)
-
+    if github_path.exists():
+        for item in github_path.iterdir():
+            if item.is_dir() and (item / '.git').exists():
+                repos.append(item.name)
+    
     if not repos:
-        print("No repositories found.")
-        return []
-
-    # Print available repos
-    print("Available repositories:")
+        print("No repositories found in the specified directory.")
+        return
+    
+    # Display repos with numbers
+    print("\nAvailable repositories:")
     for i, repo in enumerate(sorted(repos), 1):
         print(f"{i}. {repo}")
-
-    print("\nEnter repository names or numbers to select, separated by commas:")
+    
+    # 7. Prompt for repo selection
+    print("\nEnter repository numbers or names to select (comma-separated):")
     selection = input().strip()
-
-    # Handle both number and name inputs
+    
     selected = []
     for item in selection.split(','):
         item = item.strip()
@@ -46,75 +116,46 @@ def find_and_select_repos(start_path=None):
             selected.append(repos[int(item)-1])
         elif item in repos:
             selected.append(item)
-
-    print("\nSelected repositories:")
+    
+    # 8. Save REFERENCED_REPOS
+    update_jupyter_config('REFERENCED_REPOS', selected)
+    print("\nSelected repositories saved:")
     for repo in selected:
         print(f"- {repo}")
 
-    return [str(start_path / repo) for repo in selected]
-
-def manage_repo_paths(new_paths=None):
-    """
-    Initialize or update repository paths in Jupyter config.
-    If new_paths is None, will just display current paths.
-    """
+def get_full_repo_paths():
+    """Get full paths for referenced repositories"""
     config_dir = paths.jupyter_config_dir()
     config_path = os.path.join(config_dir, "jupyter_notebook_config.py")
+    
+    with open(config_path, 'r') as f:
+        content = f.read()
+    
+    # Get GITHUB_DIRECTORY
+    dir_match = re.search(r"c\.GITHUB_DIRECTORY\s*=\s*'([^']*)'", content)
+    if not dir_match:
+        raise ValueError("GITHUB_DIRECTORY not found in jupyter config")
+    
+    github_dir = dir_match.group(1)
+    
+    # Get REFERENCED_REPOS
+    repos_match = re.search(r"c\.REFERENCED_REPOS\s*=\s*\[(.*?)\]", content, re.DOTALL)
+    if not repos_match:
+        raise ValueError("REFERENCED_REPOS not found in jupyter config")
+    
+    repos = [repo.strip().strip("'\"") for repo in repos_match.group(1).split(',') if repo.strip()]
+    
+    # Return full paths in Linux style
+    return [normalize_path(os.path.join(github_dir, repo)) for repo in repos]
 
-    # Initialize config if it doesn't exist
-    if not os.path.exists(config_path):
-        os.makedirs(config_dir, exist_ok=True)
-        open(config_path, 'a').close()
-
-    # Read existing config
-    with open(config_path, 'r') as file:
-        content = file.read()
-
-    # Check for existing repo paths
-    repo_match = re.search(r"c\.RepoPathList\s=\s\[(.*?)\]", content, re.DOTALL)
-    existing_paths = []
-    if repo_match:
-        # Extract paths from existing config
-        paths_str = repo_match.group(1)
-        existing_paths = [path.strip().strip("'\"") for path in paths_str.split(',') if path.strip()]
-        print("Current repository paths:")
-        for path in existing_paths:
-            print(f"- {path}")
-
-    if new_paths is not None:
-        # Combine existing and new paths, remove duplicates while preserving order
-        combined_paths = []
-        seen = set()
-        for path in existing_paths + new_paths:
-            if path not in seen:
-                combined_paths.append(path)
-                seen.add(path)
-
-        # Format the new config entry
-        paths_str = ",\n    ".join(f"'{path}'" for path in combined_paths)
-        new_config = f"\n# Repository paths configuration\nc.RepoPathList = [\n    {paths_str}\n]\n"
-
-        if repo_match:
-            # Update existing config
-            content = content.replace(repo_match.group(0), new_config.strip())
-        else:
-            # Append to config
-            content += new_config
-
-        # Write updated config
-        with open(config_path, 'w') as file:
-            file.write(content)
-
-        print("\nUpdated repository paths:")
-        for path in combined_paths:
-            print(f"- {path}")
-
-    return existing_paths
-# Example usage:
+# Example usage for IPython notebook:
 """
-# To see current paths:
-current_paths = manage_repo_paths()
-# To add new paths:
-selected_repos = find_and_select_repos()  # From previous code
-manage_repo_paths(selected_repos)
+# Run the interactive configuration
+github_update_jupyter_config()
+
+# Get the full paths
+full_paths = get_full_repo_paths()
+print("\nFull repository paths:")
+for path in full_paths:
+    print(path)
 """
