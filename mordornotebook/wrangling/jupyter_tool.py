@@ -7,11 +7,9 @@ import re
 import json
 import os
 from IPython.display import display, Javascript
-from agti.ai.openai import OpenAIRequestTool
 from IPython.core.getipython import get_ipython
 from IPython import get_ipython
 import pandas as pd
-from agti.ai.anthropic import AnthropicTool
 from openai import OpenAI
 class UserQuery:
     def __init__(self,notebook_name):
@@ -84,41 +82,50 @@ __________________________
                     "role": "user",
                     "content": f"""Given this code base <CODE BASE STARTS HERE> {output_string}<CODE BASE ENDS HERE> 
                     give me the files required or highly relevant to completing the task {task_string}. Assume we have 
-                    the parent github directory and start with the repository name.
-                    1. Do not reference setup files. 
-                    2. Do be thorough - if there are multiple files that fit the bill, include them.
-                    3. Do not be too broad and choose tangential files that are unlikely related to the task performance
-                    4. Understand that the scripts you pass will be referenced in the next step 
-                    Provide your answer as a list of file strings such as the following:
-                    ['agti/agtisecurity/example_script.py','narg/batchjobs/example_script2.py']"""
+            the parent github directory and start with the repository name.
+            1. Do not reference setup files. 
+            2. Do be thorough - if there are multiple files that fit the bill, include them.
+            3. Do not be too broad and choose tangential files that are unlikely related to the task performance
+            4. Understand that the scripts you pass will be referenced in the next step 
+            First - provide any commentary you have then output a list of files formatted EXACTLY as followed
+            -- it should be a python array without special characters. Aim to have at least 1 and less than 6 files
+            in the list.
+
+            properly format the files in lower case comma delimited in the following pipe delimited format
+
+            | LIST OF FILES | agti/agtisecurity/example_script.py, narg/batchjobs/example_script2.py |
+            
+            """
                 }
             ]
         )
         all_strings = completion.choices[0].message.content
+        print(all_strings)
         def extract_filepaths(input_string):
             """
-            Extract file paths listed within square brackets from the input string.
+            Extract file paths from a pipe-delimited format string.
+            Expected format: "| LIST OF FILES | file1.py, file2.py |"
             
             Args:
-                input_string (str): Input string containing file paths within square brackets
+                input_string (str): Input string containing file paths in pipe-delimited format
                 
             Returns:
                 list: List of extracted file paths
             """
-            # Pattern to match content within square brackets
-            pattern = r"\[(.*?)\]"
+            # Pattern to match content after "LIST OF FILES" between pipes
+            pattern = r"\|\s*LIST OF FILES\s*\|\s*(.*?)\s*\|"
             
-            # Find the match within square brackets
-            bracket_match = re.search(pattern, input_string, re.DOTALL)
+            # Find the match between pipes after "LIST OF FILES"
+            pipe_match = re.search(pattern, input_string, re.DOTALL)
             
-            if bracket_match:
-                # Extract the content within brackets
-                bracket_content = bracket_match.group(1)
+            if pipe_match:
+                # Extract the content between pipes
+                file_content = pipe_match.group(1)
                 
                 # Split the content by commas and clean up each path
                 filepaths = [
                     path.strip().strip("'").strip('"')
-                    for path in bracket_content.split(',')
+                    for path in file_content.split(',')
                     if path.strip()
                 ]
                 
@@ -272,6 +279,7 @@ __________________________
         7. The user might refer to errors in the notebook - which will be denoted in output cells 
         8. Try and conform with the user's code style as much as possible while being professional
         9. Output high grade professional code 
+        10. Pay special attention to the import names. Keep them consistent across files and do not make basic errors with import names
         
         For your output ONLY RETURN WHAT IS DENOTED AS THE FOLLOW ON TASK with reference to the original goal.
         YOUR JOB IS TO OUTPUT CODE AND EXPLANATIONS NOT OTHER TEXT. DO NOT STRAY FROM THE ASSIGMENT 
