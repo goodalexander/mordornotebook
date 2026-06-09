@@ -1,0 +1,38 @@
+{
+  "name": "mordornotebook",
+  "version": "0.2.0",
+  "description": "Mordor Notebook JupyterLab live notebook integration",
+  "keywords": [
+    "jupyter",
+    "jupyterlab",
+    "extension",
+    "mordornotebook"
+  ],
+  "license": "MIT",
+  "main": "lib/index.js",
+  "files": [
+    "lib/**/*",
+    "style/**/*"
+  ],
+  "scripts": {
+    "build": "tsc && jupyter labextension build . --development True",
+    "clean": "rimraf ../labextension lib tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@jupyterlab/apputils": "~4.5.5",
+    "@jupyterlab/application": "~4.5.5",
+    "@jupyterlab/docregistry": "~4.5.5",
+    "@jupyterlab/mainmenu": "~4.5.5",
+    "@jupyterlab/notebook": "~4.5.5",
+    "@lumino/widgets": "^2.7.1"
+  },
+  "devDependencies": {
+    "@jupyterlab/builder": "^4.5.5",
+    "rimraf": "^5.0.5",
+    "typescript": "~5.5.4"
+  },
+  "jupyterlab": {
+    "extension": true,
+    "outputDir": "../labextension"
+  }
+}

@@ -1,3 +1,18 @@
+"""Deprecated Jupyter-config repo path helper.
+
+New Mordor Notebook config should live under `~/.config/mordornotebook`, not in
+`jupyter_notebook_config.py`.
+"""
+
+import warnings
+
+warnings.warn(
+    "mordornotebook.settings.repo_paths is deprecated; use the planned "
+    "Mordor config path instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import jupyter_core.paths as paths
 from pathlib import Path
 import os
@@ -21,7 +36,7 @@ def update_jupyter_config(variable_name, value):
         content = f.read()
     
     # Check if variable exists
-    var_pattern = f"c\.{variable_name}\s*="
+    var_pattern = rf"c\.{re.escape(variable_name)}\s*="
     var_match = re.search(var_pattern, content, re.MULTILINE)
     
     if isinstance(value, list):

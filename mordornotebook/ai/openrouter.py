@@ -1,3 +1,17 @@
+"""Deprecated OpenRouter wrapper.
+
+OpenRouter can return later as an optional backend, but the Mordor Notebook MVP
+is centered on local Codex CLI sessions inside tmux.
+"""
+
+import warnings
+
+warnings.warn(
+    "mordornotebook.ai.openrouter is deprecated for the MVP path.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 from openai import OpenAI, AsyncOpenAI
 import pandas as pd
 import datetime
@@ -20,7 +34,7 @@ class OpenRouterTool:
         
         # Example 2: Image analysis
         print("\nExample 2: Image Analysis")
-        image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+        image_url = "https://example.com/image.jpg"
         print(client.example_image_analysis(image_url))
         
         # Example 3: Structured output
@@ -287,4 +301,3 @@ class OpenRouterTool:
             return structured_data
         except:
             return {"error": "Could not parse response into structured format", "raw_response": response}
-

@@ -1,3 +1,18 @@
+"""Deprecated credential helper.
+
+Do not store app credentials in Jupyter config for new Mordor Notebook work.
+Use a dedicated config/secret path or environment variables instead.
+"""
+
+import warnings
+
+warnings.warn(
+    "mordornotebook.settings.cred_reader is deprecated; do not store secrets "
+    "in Jupyter config for new Mordor Notebook work.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import jupyter_core.paths as paths
 import os
 import re
@@ -43,4 +58,4 @@ def manage_openrouter_key():
 
 if __name__ == "__main__":
     OPENROUTER_KEY = manage_openrouter_key()
-    print(f"\nYour OPENROUTER_KEY is: {OPENROUTER_KEY}")
+    print("\nOpenRouter key loaded. Secret value was not printed.")

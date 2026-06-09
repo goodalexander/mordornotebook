@@ -1,5 +1,59 @@
 # mordornotebook
-Terrible hack for millennials who still use Jupyter notebook but want to use AI. I also dislike Cursor bc it's too presumptuous and Claude is a weaker model than o1 in terms of getting code right in 1 shot 
+
+Mordor Notebook is being rebuilt as a Codex-native JupyterLab workflow: an
+auditable tmux/Codex session inside the notebook UI with access to notebook
+cells, live in-kernel memory packets, visual inspection helpers, and normal repo
+operations.
+
+## Production MVP plan
+
+The implementation plan for the Codex-in-Jupyter/tmux MVP is in
+[docs/plans/Mordor_Notebook_Production_Plan.md](docs/plans/Mordor_Notebook_Production_Plan.md).
+
+The current MVP quickstart is in
+[docs/MVP_Quickstart.md](docs/MVP_Quickstart.md), and the implementation status
+is tracked in [docs/Implementation_Status.md](docs/Implementation_Status.md).
+
+## Status
+
+The old OpenRouter-based helper API is deprecated. The legacy modules are still
+present so old notebooks can be inspected or migrated, but new work should not
+extend them:
+
+- `mordornotebook.wrangling.jupyter_tool.UserQuery`
+- `mordornotebook.wrangling.repo_export`
+- `mordornotebook.ai.openrouter.OpenRouterTool`
+- `mordornotebook.settings.*` Jupyter config mutation helpers
+
+The new implementation should replace those flows with `attach(...)`,
+`mordorctl`, a safe config directory, a Jupyter Server extension, a JupyterLab
+side panel, and a tmux/Codex adapter.
+
+Current install path:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -e '.[notebook,test]'
+.venv/bin/mordorctl doctor
+.venv/bin/python -m pytest -q
+```
+
+Current notebook entrypoint:
+
+```python
+from pathlib import Path
+
+from mordornotebook import attach
+
+mordor = attach(repo=Path.cwd(), goal="iterate on this notebook task")
+mordor.register("panel", panel)
+mordor.panel()
+```
+
+Legacy behavior and migration notes are tracked in
+[docs/legacy/Legacy_OpenRouter_Helper.md](docs/legacy/Legacy_OpenRouter_Helper.md).
+
+## Legacy Usage Deprecated
 
 The way Mordor Notebook works is it ingests your whole repositories, processes them via a huge context model such as Gemini Pro (the tank) -- into a list of relevant scripts related to "The Goal".
 These scripts get cached. Then -- they're referenced along with the notebook content for completing tasks. 
@@ -77,4 +131,3 @@ user_query.output_goal_and_task_response(original_goal='could you please output 
 original_goals will be cached in the class. Each time they are run they'll use the "tank model" i.e. Gemini Pro to load in the relevant scripts from the repos you choose
 
 When you're working on a new goal change the original goal string. This takes longer but will refresh the context. 
-

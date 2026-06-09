@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "allowJs": false,
+    "declaration": true,
+    "esModuleInterop": true,
+    "incremental": true,
+    "jsx": "react",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "noEmitOnError": true,
+    "noImplicitAny": false,
+    "outDir": "lib",
+    "rootDir": "src",
+    "skipLibCheck": true,
+    "strict": false,
+    "target": "ES2018"
+  },
+  "include": [
+    "src/*"
+  ]
+}

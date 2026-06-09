@@ -1,3 +1,18 @@
+"""Deprecated OpenRouter notebook helper.
+
+This module is retained for old notebooks only. New Mordor Notebook work should
+use the planned `attach(...)` runtime, `mordorctl`, and JupyterLab bridge.
+"""
+
+import warnings
+
+warnings.warn(
+    "mordornotebook.wrangling.jupyter_tool is deprecated; use the new "
+    "attach/mordorctl architecture when implemented.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 #open_router_key = OpenRouterTool(openrouter_key=OPENROUTER_KEY)
 from mordornotebook.wrangling.repo_export import *
 from mordornotebook.settings.global_vars import OPENROUTER_KEY, REPO_PATHS

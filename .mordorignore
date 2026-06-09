@@ -1,0 +1,19 @@
+# Default local context exclusions for Mordor Notebook.
+.git/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.env
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+*.parquet
+*.csv
+*.sqlite
+*.db
+secrets.*
+*secret*
+*token*
+*key*

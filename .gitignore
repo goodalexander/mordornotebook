@@ -43,6 +43,7 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .nox/
+test-results/
 .coverage
 .coverage.*
 .cache
@@ -123,6 +124,12 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# JavaScript/JupyterLab extension local build dependencies
+node_modules/
+mordornotebook/labextension/build_log.json
+mordornotebook/labextension_src/lib/
+mordornotebook/labextension_src/tsconfig.tsbuildinfo
+
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -130,3 +137,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+# Mordor Notebook helper workspace
+/mordor/cache/
+/mordor/tmp/
+/mordor/runs/
+/mordor/*.log
+/mordor/**/*.pyc
+/mordor/**/__pycache__/

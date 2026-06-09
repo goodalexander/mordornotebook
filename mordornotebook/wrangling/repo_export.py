@@ -1,3 +1,18 @@
+"""Deprecated whole-repository prompt exporter.
+
+The MVP should replace this with a bounded, redacted context builder that honors
+`.mordorignore` and avoids dumping entire repos into model prompts.
+"""
+
+import warnings
+
+warnings.warn(
+    "mordornotebook.wrangling.repo_export is deprecated; use the planned "
+    "bounded context builder instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import os
 from pathlib import Path
 
@@ -107,7 +122,7 @@ def export_multiple_repositories(repo_paths: list) -> str:
     
     return '\n'.join(output)
 
-""" 
+"""
 if __name__ == "__main__":
     # Example usage
     repositories = [
@@ -118,4 +133,4 @@ if __name__ == "__main__":
     # Get repository contents as string
     output_string = export_multiple_repositories(repositories)
     print(output_string)  # Or use the string as needed
-""" 
+"""
