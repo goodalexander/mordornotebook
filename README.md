@@ -1,44 +1,69 @@
-# mordornotebook
+# Mordor Notebook
 
-Mordor Notebook is being rebuilt as a Codex-native JupyterLab workflow: an
-auditable tmux/Codex session inside the notebook UI with access to notebook
-cells, live in-kernel memory packets, visual inspection helpers, and normal repo
-operations.
+Mordor Notebook is a JupyterLab workflow for using local agent CLIs from inside
+an open notebook. The product goal is simple: type a request in the notebook UI,
+let Codex or Cursor inspect the repo and the live kernel context, and have the
+agent create rendered notebook cells instead of pasting long code into chat.
 
-## Production MVP plan
+The current implementation includes:
 
-The implementation plan for the Codex-in-Jupyter/tmux MVP is in
-[docs/plans/Mordor_Notebook_Production_Plan.md](docs/plans/Mordor_Notebook_Production_Plan.md).
+- a JupyterLab menu/toolbar button named `Mordor`;
+- a Jupyter Server extension under `/mordor/api/...`;
+- an in-kernel runtime bridge started by `attach(...)`;
+- `mordorctl`, the CLI agents use to inspect context, inspect registered memory,
+  and insert notebook cells;
+- Codex and Cursor Agent backends run through `tmux` for an auditable trail;
+- a repo-local helper workspace convention under `mordor/` and `mordorhelper/`.
 
-The current MVP quickstart is in
-[docs/MVP_Quickstart.md](docs/MVP_Quickstart.md), and the implementation status
-is tracked in [docs/Implementation_Status.md](docs/Implementation_Status.md).
+## Start Here
 
-## Status
+- [Install A Fresh Instance](docs/Install.md)
+- [Architecture](docs/Architecture.md)
+- [Codex And Cursor Backends](docs/Agent_Backends.md)
+- [Current Status](docs/Status.md)
+- [Helper Workspace](docs/Mordor_Helper_Workspace.md)
 
-The old OpenRouter-based helper API is deprecated. The legacy modules are still
-present so old notebooks can be inspected or migrated, but new work should not
-extend them:
+Historical design plans are still kept under [docs/plans](docs/plans/index.md),
+but they are not the primary product documentation.
 
-- `mordornotebook.wrangling.jupyter_tool.UserQuery`
-- `mordornotebook.wrangling.repo_export`
-- `mordornotebook.ai.openrouter.OpenRouterTool`
-- `mordornotebook.settings.*` Jupyter config mutation helpers
+## Fresh Install
 
-The new implementation should replace those flows with `attach(...)`,
-`mordorctl`, a safe config directory, a Jupyter Server extension, a JupyterLab
-side panel, and a tmux/Codex adapter.
+Requirements:
 
-Current install path:
+- Python 3.11+
+- JupyterLab 4.x
+- `tmux`
+- an authenticated local Codex CLI and/or Cursor Agent CLI
+
+Install from a fresh checkout:
 
 ```bash
+git clone https://github.com/goodalexander/mordornotebook.git
+cd mordornotebook
+
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[notebook,test]'
-.venv/bin/mordorctl doctor
-.venv/bin/python -m pytest -q
+. .venv/bin/activate
+python -m pip install -U pip
+python -m pip install -e '.[notebook,test]'
+
+mordorctl doctor
+mordorctl jupyter enable --sys-prefix
+jupyter server extension list
 ```
 
-Current notebook entrypoint:
+Restart Jupyter after enabling the server extension:
+
+```bash
+jupyter lab
+```
+
+Codex and Cursor must already be logged in on the box running Jupyter. Mordor
+does not manage those credentials.
+
+## Minimal Notebook Entry
+
+The JupyterLab button is the normal entrypoint. The explicit Python entrypoint is
+still useful for debugging:
 
 ```python
 from pathlib import Path
@@ -46,88 +71,15 @@ from pathlib import Path
 from mordornotebook import attach
 
 mordor = attach(repo=Path.cwd(), goal="iterate on this notebook task")
-mordor.register("panel", panel)
 mordor.panel()
 ```
 
-Legacy behavior and migration notes are tracked in
+If you want the agent to see a large in-memory object without reloading it from
+disk:
+
+```python
+mordor.register("panel", panel)
+```
+
+The old OpenRouter-based helper API is deprecated. Migration notes are in
 [docs/legacy/Legacy_OpenRouter_Helper.md](docs/legacy/Legacy_OpenRouter_Helper.md).
-
-## Legacy Usage Deprecated
-
-The way Mordor Notebook works is it ingests your whole repositories, processes them via a huge context model such as Gemini Pro (the tank) -- into a list of relevant scripts related to "The Goal".
-These scripts get cached. Then -- they're referenced along with the notebook content for completing tasks. 
-
-You need to register for an API key for Mordor Notebook to work 
-OpenRouter's website is here: https://openrouter.ai
-
-To use Mordor Notebok you'll need OpenRouter and a Level 5 OpenAI API key loaded into your OpenRouter API. If you don't have the level 5 OpenAI key then I recommend swapping out o1
-with deepseek r1 
-
-Line 119 of wrangling/jupyer_tool.py 
-Change self.mage_model = 'openai/o1'#'deepseek/deepseek-r1'
-to
-self.mage_model = 'deepseek/deepseek-r1'
-
-For your tank you want a 1m+ context model, and for your mage you want a strong reasoning model. I'll do my best to update this over time with the best model
-
-## Suggested usage
-
-Download repository then ~/repos/mordornotebook$ pip install -e .
-
-from mordornotebook.settings.global_vars import *
-from mordornotebook.wrangling.jupyter_tool import UserQuery
-
-Once you do this you'll get a toolbar 
-
-(if you've already installed you'll see something like this)
-____
-Existing configuration found:
-GitHub directory: C:/Users/goodalexander/OneDrive/Documents/GitHub
-Referenced repositories:
-- agti
-- narg
-
-Would you like to keep the existing configuration (1) or re-enter (0)?
-____
-if you enter re-enter (0)
-
-you'll be prompted to enter your Github repository path 
-Please enter your GitHub directory path:
-C:/Users/goodalexander/OneDrive/Documents/GitHub (in my case)
-
-This should be where you have your Github Repositories saved 
-
-After you do this you'll be prompted for the repositories you want to include in the Mordor Notebook helper
-
-Available repositories:
-1. agti
-2. goodalexander.github.io
-3. goodalexanderinfra
-4. mordornotebook
-5. narg
-6. pftpyclient
-7. sanjuancapital
-8. secondfoundation
-9. shipyardtech
-10. trading
-
-In my case I just want agti,narg so I enter that in the input box 
-
-Then I get
-
-Selected repositories saved:
-- agti
-- narg
-
-Found existing OpenRouterKey
-
-Let's say you're in a notebook called DE_demo -- this is how you use the helper
-
-user_query = UserQuery(notebook_name='DE_demo')
-user_query.output_goal_and_task_response(original_goal='could you please output a function that outputs the most recent coinmarketcap pro data',
-                                         follow_on_task='I want the data that is updated with live data -- should be a function inside cmcpro pull')
-
-original_goals will be cached in the class. Each time they are run they'll use the "tank model" i.e. Gemini Pro to load in the relevant scripts from the repos you choose
-
-When you're working on a new goal change the original goal string. This takes longer but will refresh the context. 

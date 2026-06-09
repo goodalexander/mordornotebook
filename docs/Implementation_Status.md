@@ -1,4 +1,9 @@
-# Mordor Notebook Implementation Status
+# Mordor Notebook Detailed Evidence Log
+
+This is an evidence log for implementation and QA work. It is intentionally
+detailed and includes historical context. For the current product view, read
+[Current Status](Status.md), [Architecture](Architecture.md), and
+[Install A Fresh Instance](Install.md) first.
 
 ## Current Product Status
 
